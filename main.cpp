@@ -63,11 +63,21 @@ DECL_HOOKv(TracesShutdown)
 
 DECL_HOOKv(TracesAdd1, CVector *pStart, CVector *pEnd, float SizeArg, UInt32 LifeTimeArg, UInt8 OpaquenessArg)
 {
+    if(nTracesType == TRACE_TYPE_SA)
+    {
+        TracesAdd1(pStart, pEnd, SizeArg, LifeTimeArg, OpaquenessArg);
+        return;
+    }
     CBulletTraces::AddTrace(pStart, pEnd, SizeArg, LifeTimeArg, OpaquenessArg);
 }
 
 DECL_HOOKv(TracesAdd2, CVector *pStart, CVector *pEnd, Int32 WeaponType, CEntity *pFiredByEntity)
 {
+    if(nTracesType == TRACE_TYPE_SA)
+    {
+        TracesAdd2(pStart, pEnd, WeaponType, pFiredByEntity);
+        return;
+    }
     CBulletTraces::AddTrace2(pStart, pEnd, WeaponType, pFiredByEntity);
 }
 
@@ -75,6 +85,13 @@ DECL_HOOKv(TracesAdd2, CVector *pStart, CVector *pEnd, Int32 WeaponType, CEntity
 // ---------------------------------------------------------------------------------------
 
 
+void OnSettingSwitch(int oldVal, int newVal, void* data)
+{
+    clampint(0, TRACE_TYPE_MAX-1, &newVal);
+    aml->MLSSetInt("TRACETYP", newVal);
+    nTracesType = (eTracesType)newVal;
+    CBulletTraces::InitTraces();
+}
 extern "C" void OnModLoad()
 {
     logger->SetTag("SA BulletTracers");
@@ -94,6 +111,7 @@ extern "C" void OnModLoad()
         return;
     }
 
+    // Hooks
   #ifdef AML32
     HOOKPLT(TracesInit, pGTASA + 0x66E580);
     HOOKPLT(TracesUpdate, pGTASA + 0x66FA4C);
@@ -111,6 +129,7 @@ extern "C" void OnModLoad()
     HOOKPLT(TracesAdd2, pGTASA + 0x846DB0);
   #endif
 
+    // Game Funcs
     SET_TO(UpdateBulletTrace, aml->GetSym(hGTASA, "_ZN12CBulletTrace6UpdateEv"));
     SET_TO(FindPlayerPed, aml->GetSym(hGTASA, "_Z13FindPlayerPedi"));
     SET_TO(FindPlayerVehicle, aml->GetSym(hGTASA, "_Z17FindPlayerVehicleib"));
@@ -120,12 +139,30 @@ extern "C" void OnModLoad()
     SET_TO(RwIm3DTransform, aml->GetSym(hGTASA, "_Z15RwIm3DTransformP18RxObjSpace3DVertexjP11RwMatrixTagj"));
     SET_TO(RwIm3DRenderIndexedPrimitive, aml->GetSym(hGTASA, "_Z28RwIm3DRenderIndexedPrimitive15RwPrimitiveTypePti"));
     SET_TO(RwIm3DEnd, aml->GetSym(hGTASA, "_Z9RwIm3DEndv"));
+    SET_TO(ReportFrontendAudioEvent, aml->GetSym(hGTASA, "_ZN12CAudioEngine24ReportFrontendAudioEventEiff"));
 
+    // Game Vars
     SET_TO(TheCamera, aml->GetSym(hGTASA, "TheCamera"));
     SET_TO(m_snTimeInMilliseconds, aml->GetSym(hGTASA, "_ZN6CTimer22m_snTimeInMillisecondsE"));
+    SET_TO(AudioEngine, aml->GetSym(hGTASA, "AudioEngine"));
 
+    // Our Vars
     tracesTextures = sautils->AddTextureDB("bullettraces", true);
 
+    // Config
+    bDoAudioEffects = true;
+    nTracesType = TRACE_TYPE_SA;
+    aml->MLSGetInt("TRACETYP", (int*)&nTracesType);
+
+    static const char* aSwitches[TRACE_TYPE_MAX] = 
+    {
+        "GTA:SA",
+        "GTA:VC",
+        "GTA:III",
+    };
+    sautils->AddClickableItem(eTypeOfSettings::SetType_Display, "Bullet Traces", nTracesType, 0, TRACE_TYPE_MAX-1, aSwitches, OnSettingSwitch, NULL);
+
+    // Final!
     logger->Info("The mod has been loaded");
 }
 
