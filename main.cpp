@@ -55,6 +55,12 @@ DECL_HOOKv(TracesRender)
     CBulletTraces::Render();
 }
 
+DECL_HOOKv(TracesShutdown)
+{
+    TracesShutdown();
+    CBulletTraces::Shutdown();
+}
+
 DECL_HOOKv(TracesAdd1, CVector *pStart, CVector *pEnd, float SizeArg, UInt32 LifeTimeArg, UInt8 OpaquenessArg)
 {
     CBulletTraces::AddTrace(pStart, pEnd, SizeArg, LifeTimeArg, OpaquenessArg);
@@ -92,12 +98,14 @@ extern "C" void OnModLoad()
     HOOKPLT(TracesInit, pGTASA + 0x66E580);
     HOOKPLT(TracesUpdate, pGTASA + 0x66FA4C);
     HOOKPLT(TracesRender, pGTASA + 0x66F868);
+    HOOKPLT(TracesShutdown, pGTASA + 0x6710A4);
     HOOKPLT(TracesAdd1, pGTASA + 0x672088);
     HOOKPLT(TracesAdd2, pGTASA + 0x6740FC);
   #else
     HOOKPLT(TracesInit, pGTASA + 0x83D918);
     HOOKPLT(TracesUpdate, pGTASA + 0x83FA90);
     HOOKPLT(TracesRender, pGTASA + 0x83F7A8);
+    HOOKPLT(TracesShutdown, pGTASA + 0x841EB0);
     HOOKPLT(TracesAdd1, pGTASA + 0x8438E8);
     HOOKBL(TracesAdd1, pGTASA + 0x6E6314);
     HOOKPLT(TracesAdd2, pGTASA + 0x846DB0);

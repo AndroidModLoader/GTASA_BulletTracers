@@ -19,9 +19,9 @@ float CBulletTraces::thickness[512];
 int CBulletTraces::lifetime[512];
 int CBulletTraces::visibility[512];
 
-RwTexture* gpTraceTexture = NULL;
-RwTexture* gpSmokeTrailTexture = NULL;
-RwIm3DVertex TraceVertices[10];
+static RwTexture* gpTraceTexture = NULL;
+static RwTexture* gpSmokeTrailTexture = NULL;
+static RwIm3DVertex TraceVertices[10];
 static uint16_t TraceIndexList[48] = { 0, 5, 7, 0, 7, 2, 0, 7, 5, 0, 2, 7, 0, 4, 9, 0,
                                        9, 5, 0, 9, 4, 0, 5, 9, 0, 1, 6, 0, 6, 5, 0, 6,
                                        1, 0, 5, 6, 0, 3, 8, 0, 8, 5, 0, 8, 3, 0, 5, 8 };
@@ -33,39 +33,21 @@ void CBulletTraces::Init(void)
     gpTraceTexture = RwTextureRead("trace", NULL);
     gpSmokeTrailTexture = RwTextureRead("smoketrail", NULL);
     
-    TraceVertices[0].texCoords.u = 0.0;
-    TraceVertices[0].texCoords.v = 0.0;
-    TraceVertices[1].texCoords.u = 1.0;
-    TraceVertices[1].texCoords.v = 0.0;
-    TraceVertices[2].texCoords.u = 1.0;
-    TraceVertices[2].texCoords.v = 0.0;
-    TraceVertices[3].texCoords.u = 1.0;
-    TraceVertices[3].texCoords.v = 0.0;
-    TraceVertices[4].texCoords.u = 1.0;
-    TraceVertices[4].texCoords.v = 0.0;
-    TraceVertices[5].texCoords.u = 0.0;
-    TraceVertices[5].texCoords.v = 0.0;
-    TraceVertices[6].texCoords.u = 1.0;
-    TraceVertices[6].texCoords.v = 0.0;
-    TraceVertices[7].texCoords.u = 1.0;
-    TraceVertices[7].texCoords.v = 0.0;
-    TraceVertices[8].texCoords.u = 1.0;
-    TraceVertices[8].texCoords.v = 0.0;
-    TraceVertices[9].texCoords.u = 1.0;
-    TraceVertices[9].texCoords.v = 0.0;
-
-    TraceIndexList[0] = 0;
-    TraceIndexList[1] = 2;
-    TraceIndexList[2] = 1;
-    TraceIndexList[3] = 1;
-    TraceIndexList[4] = 2;
-    TraceIndexList[5] = 3;
-    TraceIndexList[6] = 2;
-    TraceIndexList[7] = 4;
-    TraceIndexList[8] = 3;
-    TraceIndexList[9] = 3;
-    TraceIndexList[10] = 4;
-    TraceIndexList[11] = 5;
+    RwIm3DVertexSetU(&TraceVertices[0], 0.0);
+	RwIm3DVertexSetV(&TraceVertices[0], 0.0);
+	RwIm3DVertexSetU(&TraceVertices[1], 1.0);
+	RwIm3DVertexSetV(&TraceVertices[1], 0.0);
+	RwIm3DVertexSetU(&TraceVertices[2], 1.0);
+	RwIm3DVertexSetV(&TraceVertices[2], 0.0);
+	RwIm3DVertexSetU(&TraceVertices[3], 1.0);
+	RwIm3DVertexSetV(&TraceVertices[3], 0.0);
+	RwIm3DVertexSetU(&TraceVertices[4], 1.0);
+	RwIm3DVertexSetV(&TraceVertices[4], 0.0);
+	RwIm3DVertexSetU(&TraceVertices[5], 0.0);
+	RwIm3DVertexSetU(&TraceVertices[6], 1.0);
+	RwIm3DVertexSetU(&TraceVertices[7], 1.0);
+	RwIm3DVertexSetU(&TraceVertices[8], 1.0);
+	RwIm3DVertexSetU(&TraceVertices[9], 1.0);
 
     // Traces ini load
     char path[256];
@@ -130,13 +112,25 @@ void CBulletTraces::AddTrace(CVector* start, CVector* end, float thickness, uint
 
         float startProjUp = DotProduct(TheCamera->GetUp(), *start - TheCamera->GetPosition());
         float endProjUp = DotProduct(TheCamera->GetUp(), *end - TheCamera->GetPosition());
-        float distUp = (endProjUp - startProjUp) * fStartDistFwd + startProjUp;
 
         float startProjRight = DotProduct(TheCamera->GetRight(), *start - TheCamera->GetPosition());
         float endProjRight = DotProduct(TheCamera->GetRight(), *end - TheCamera->GetPosition());
-        float distRight = (endProjRight - startProjRight) * fStartDistFwd + startProjRight;
 
+        float distUp = (endProjUp - startProjUp) * fStartDistFwd + startProjUp;
+        float distRight = (endProjRight - startProjRight) * fStartDistFwd + startProjRight;
         float dist = sqrt(sq(distUp) + sq(distRight));
+
+        if(dist < 2.0f)
+        {
+            if(distRight < 0.0f)
+            {
+                // PlayResidentSoundEvent
+            }
+            else
+            {
+                // PlayResidentSoundEvent
+            }
+        }
     }
 }
 
@@ -211,16 +205,16 @@ void CBulletTraces::Render(void)
         VectorNormalise(&horizontalOffset);
         horizontalOffset *= traceThickness;
 
-        // then closer trace to die then it more transparent
+        // trace is dying = more transparency
         uint8_t nAlphaValue = aTraces[i].Opaqueness * (aTraces[i].LifeTime - timeAlive) / aTraces[i].LifeTime;
 
         CVector start = aTraces[i].Start;
         CVector end = aTraces[i].End;
         float startProj = DotProduct(start - TheCamera->GetPosition(), TheCamera->GetForward()) - 0.7f;
         float endProj = DotProduct(end - TheCamera->GetPosition(), TheCamera->GetForward()) - 0.7f;
-        if (startProj < 0.0f && endProj < 0.0f) continue; // we dont need render trace behind us
+        if (startProj < 0.0f && endProj < 0.0f) continue; // we dont need to render trace behind us
 
-        // if strat behind us move it closer
+        // if start behind us, move it closer
         if (startProj < 0.0f)
         {
             float absStartProj = std::abs(startProj);
@@ -276,7 +270,7 @@ void CBulletTraces::Render(void)
         RwIm3DVertexSetPos(&TraceVertices[9], end2.x - horizontalOffset.y, end2.y - horizontalOffset.y, end2.z);
       #endif
 
-        if (RwIm3DTransform(TraceVertices, ARRAY_SIZE(TraceVertices), nullptr, 1))
+        if (RwIm3DTransform(TraceVertices, ARRAY_SIZE(TraceVertices), NULL, rwIM3D_VERTEXUV))
         {
             RwIm3DRenderIndexedPrimitive(rwPRIMTYPETRILIST, TraceIndexList, ARRAY_SIZE(TraceIndexList));
             RwIm3DEnd();
@@ -310,7 +304,7 @@ void CBulletTraces::Render(void)
         RwIm3DVertexSetPos(&TraceVertices[9], start2.x - horizontalOffset.y, start2.y - horizontalOffset.y, start2.z);
 #endif
 
-        if (RwIm3DTransform(TraceVertices, ARRAY_SIZE(TraceVertices), nullptr, rwIM3D_VERTEXUV))
+        if (RwIm3DTransform(TraceVertices, ARRAY_SIZE(TraceVertices), NULL, rwIM3D_VERTEXUV))
         {
             RwIm3DRenderIndexedPrimitive(rwPRIMTYPETRILIST, TraceIndexList, ARRAY_SIZE(TraceIndexList));
             RwIm3DEnd();
@@ -333,7 +327,7 @@ void CBulletTraces::Render(void)
         RwIm3DVertexSetPos(&TraceVertices[9], end2.x - horizontalOffset.y, end2.y - horizontalOffset.y, end2.z);
 #endif
 
-        if (RwIm3DTransform(TraceVertices, ARRAY_SIZE(TraceVertices), nullptr, rwIM3D_VERTEXUV))
+        if (RwIm3DTransform(TraceVertices, ARRAY_SIZE(TraceVertices), NULL, rwIM3D_VERTEXUV))
         {
             RwIm3DRenderIndexedPrimitive(rwPRIMTYPETRILIST, TraceIndexList, ARRAY_SIZE(TraceIndexList));
             RwIm3DEnd();
