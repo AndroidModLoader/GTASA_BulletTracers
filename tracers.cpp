@@ -208,7 +208,7 @@ void CBulletTraces::AddTrace2(CVector* start, CVector* end, eWeaponType weaponTy
             if (speed < 0.05f) return;
         }
     }
-    
+
     switch(nTracesType)
     {
         default: // SA

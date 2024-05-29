@@ -46,13 +46,13 @@ DECL_HOOKv(TracesInit)
 DECL_HOOKv(TracesUpdate)
 {
     TracesUpdate();
-    CBulletTraces::Update();
+    if(bModEnabled) CBulletTraces::Update();
 }
 
 DECL_HOOKv(TracesRender)
 {
     TracesRender();
-    CBulletTraces::Render();
+    if(bModEnabled) CBulletTraces::Render();
 }
 
 DECL_HOOKv(TracesShutdown)
@@ -63,11 +63,21 @@ DECL_HOOKv(TracesShutdown)
 
 DECL_HOOKv(TracesAdd1, CVector *pStart, CVector *pEnd, float SizeArg, UInt32 LifeTimeArg, UInt8 OpaquenessArg)
 {
+    if(!bModEnabled)
+    {
+        TracesAdd1(pStart, pEnd, SizeArg, LifeTimeArg, OpaquenessArg);
+        return;
+    }
     CBulletTraces::AddTrace(pStart, pEnd, SizeArg, LifeTimeArg, OpaquenessArg);
 }
 
 DECL_HOOKv(TracesAdd2, CVector *pStart, CVector *pEnd, eWeaponType WeaponType, CEntity *pFiredByEntity)
 {
+    if(!bModEnabled)
+    {
+        TracesAdd2(pStart, pEnd, WeaponType, pFiredByEntity);
+        return;
+    }
     CBulletTraces::AddTrace2(pStart, pEnd, WeaponType, pFiredByEntity);
 }
 
@@ -81,6 +91,12 @@ void OnSettingSwitch_Type(int oldVal, int newVal, void* data)
     aml->MLSSetInt("TRACETYP", newVal);
     nTracesType = (eTracesType)newVal;
     CBulletTraces::InitTraces();
+}
+void OnSettingSwitch_Enabled(int oldVal, int newVal, void* data)
+{
+    clampint(0, 1, &newVal);
+    //aml->MLSSetInt("TRACEWRK", newVal); // nah
+    bModEnabled = (newVal!=0);
 }
 void OnSettingSwitch_Config(int oldVal, int newVal, void* data)
 {
@@ -146,11 +162,13 @@ extern "C" void OnModLoad()
     tracesTextures = sautils->AddTextureDB("bullettraces", true);
 
     // Config
+    bModEnabled = true;
     bDoAudioEffects = true;
     bUseConfigValues = true;
     nTracesType = TRACE_TYPE_SA;
     aml->MLSGetInt("TRACETYP", (int*)&nTracesType);
     aml->MLSGetInt("TRACECFG", (int*)&bUseConfigValues);
+    //aml->MLSGetInt("TRACEWRK", (int*)&bModEnabled); // Nah
 
     static const char* aSwitchesType[TRACE_TYPE_MAX] = 
     {
@@ -164,7 +182,8 @@ extern "C" void OnModLoad()
         "FEM_ON",
     };
     sautils->AddClickableItem(eTypeOfSettings::SetType_Display, "Bullet Traces", nTracesType, 0, TRACE_TYPE_MAX-1, aSwitchesType, OnSettingSwitch_Type, NULL);
-    sautils->AddClickableItem(eTypeOfSettings::SetType_Display, "Use Traces Config", bUseConfigValues, 0, 1, pYesNo, OnSettingSwitch_Config, NULL);
+    sautils->AddClickableItem(eTypeOfSettings::SetType_Mods, "Enable BulletTraces", bUseConfigValues, 0, 1, pYesNo, OnSettingSwitch_Enabled, NULL);
+    sautils->AddClickableItem(eTypeOfSettings::SetType_Mods, "Use Traces Config", bUseConfigValues, 0, 1, pYesNo, OnSettingSwitch_Config, NULL);
 
     // Final!
     logger->Info("The mod has been loaded");

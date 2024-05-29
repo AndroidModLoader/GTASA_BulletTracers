@@ -32,3 +32,4 @@ enum eTracesType : int
 EXTERNAL eTracesType nTracesType;
 EXTERNAL int bDoAudioEffects;
 EXTERNAL int bUseConfigValues;
+EXTERNAL int bModEnabled;
