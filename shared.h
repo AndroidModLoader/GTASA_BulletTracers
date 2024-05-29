@@ -30,4 +30,5 @@ enum eTracesType : int
     TRACE_TYPE_MAX
 };
 EXTERNAL eTracesType nTracesType;
-EXTERNAL bool bDoAudioEffects;
+EXTERNAL int bDoAudioEffects;
+EXTERNAL int bUseConfigValues;

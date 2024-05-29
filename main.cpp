@@ -63,21 +63,11 @@ DECL_HOOKv(TracesShutdown)
 
 DECL_HOOKv(TracesAdd1, CVector *pStart, CVector *pEnd, float SizeArg, UInt32 LifeTimeArg, UInt8 OpaquenessArg)
 {
-    if(nTracesType == TRACE_TYPE_SA)
-    {
-        TracesAdd1(pStart, pEnd, SizeArg, LifeTimeArg, OpaquenessArg);
-        return;
-    }
     CBulletTraces::AddTrace(pStart, pEnd, SizeArg, LifeTimeArg, OpaquenessArg);
 }
 
-DECL_HOOKv(TracesAdd2, CVector *pStart, CVector *pEnd, Int32 WeaponType, CEntity *pFiredByEntity)
+DECL_HOOKv(TracesAdd2, CVector *pStart, CVector *pEnd, eWeaponType WeaponType, CEntity *pFiredByEntity)
 {
-    if(nTracesType == TRACE_TYPE_SA)
-    {
-        TracesAdd2(pStart, pEnd, WeaponType, pFiredByEntity);
-        return;
-    }
     CBulletTraces::AddTrace2(pStart, pEnd, WeaponType, pFiredByEntity);
 }
 
@@ -85,12 +75,18 @@ DECL_HOOKv(TracesAdd2, CVector *pStart, CVector *pEnd, Int32 WeaponType, CEntity
 // ---------------------------------------------------------------------------------------
 
 
-void OnSettingSwitch(int oldVal, int newVal, void* data)
+void OnSettingSwitch_Type(int oldVal, int newVal, void* data)
 {
     clampint(0, TRACE_TYPE_MAX-1, &newVal);
     aml->MLSSetInt("TRACETYP", newVal);
     nTracesType = (eTracesType)newVal;
     CBulletTraces::InitTraces();
+}
+void OnSettingSwitch_Config(int oldVal, int newVal, void* data)
+{
+    clampint(0, 1, &newVal);
+    aml->MLSSetInt("TRACECFG", newVal);
+    bUseConfigValues = (newVal!=0);
 }
 extern "C" void OnModLoad()
 {
@@ -151,16 +147,24 @@ extern "C" void OnModLoad()
 
     // Config
     bDoAudioEffects = true;
+    bUseConfigValues = true;
     nTracesType = TRACE_TYPE_SA;
     aml->MLSGetInt("TRACETYP", (int*)&nTracesType);
+    aml->MLSGetInt("TRACECFG", (int*)&bUseConfigValues);
 
-    static const char* aSwitches[TRACE_TYPE_MAX] = 
+    static const char* aSwitchesType[TRACE_TYPE_MAX] = 
     {
         "GTA:SA",
         "GTA:VC",
         "GTA:III",
     };
-    sautils->AddClickableItem(eTypeOfSettings::SetType_Display, "Bullet Traces", nTracesType, 0, TRACE_TYPE_MAX-1, aSwitches, OnSettingSwitch, NULL);
+    static const char* pYesNo[] = 
+    {
+        "FEM_OFF",
+        "FEM_ON",
+    };
+    sautils->AddClickableItem(eTypeOfSettings::SetType_Display, "Bullet Traces", nTracesType, 0, TRACE_TYPE_MAX-1, aSwitchesType, OnSettingSwitch_Type, NULL);
+    sautils->AddClickableItem(eTypeOfSettings::SetType_Display, "Use Traces Config", bUseConfigValues, 0, 1, pYesNo, OnSettingSwitch_Config, NULL);
 
     // Final!
     logger->Info("The mod has been loaded");
