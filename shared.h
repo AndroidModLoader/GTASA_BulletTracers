@@ -34,3 +34,5 @@ EXTERNAL eTracesType nTracesType;
 EXTERNAL int bDoAudioEffects;
 EXTERNAL int bUseConfigValues;
 EXTERNAL int bModEnabled;
+
+extern const char* aSwitchesType[TRACE_TYPE_MAX];

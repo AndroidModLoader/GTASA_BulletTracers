@@ -9,6 +9,7 @@
 
 struct CTracesConfig
 {
+    bool  loaded;
     float thickness[512];
     int   lifetime[512];
     int   visibility[512];
@@ -24,6 +25,7 @@ public:
     static void Shutdown(void);
     static void AddTrace(CVector* start, CVector* end, float thickness, uint32_t lifeTime, uint8_t visibility);
     static void AddTrace2(CVector* start, CVector* end, eWeaponType weaponType, CEntity* shooter);
+    static void AddTraceAfterLogic(CVector* start, CVector* end, eWeaponType weaponType, bool isInstantFire = false);
 
 private:
     static void RenderSA(void);

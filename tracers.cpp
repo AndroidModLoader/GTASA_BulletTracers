@@ -99,22 +99,29 @@ void CBulletTraces::Init(void)
         snprintf(path, sizeof(path), "%s/VCBulletTrails_Weapons.ini", aml->GetConfigPath());
         mINI::INIFile file(path);
         mINI::INIStructure ini;
-        file.read(ini);
+        CBulletTraces::configVC.loaded = file.read(ini);
 
         // Reading weapons params
-        for (int i = 22; i < 512; ++i)
+        if(CBulletTraces::configVC.loaded)
         {
-            std::string name = "WEP";
-            std::string formatted_str = name + std::to_string(i);
-            const char* formatted_str2 = formatted_str.c_str();
+            for (int i = 22; i < 512; ++i)
+            {
+                std::string name = "WEP";
+                std::string formatted_str = name + std::to_string(i);
+                const char* formatted_str2 = formatted_str.c_str();
 
-            std::string strb = ini.get(formatted_str2).get("thickness");
-            std::string strc = ini.get(formatted_str2).get("lifetime");
-            std::string strd = ini.get(formatted_str2).get("visibility");
+                std::string strb = ini.get(formatted_str2).get("thickness");
+                std::string strc = ini.get(formatted_str2).get("lifetime");
+                std::string strd = ini.get(formatted_str2).get("visibility");
 
-            CBulletTraces::configVC.thickness[i] =  std::atof( strb.c_str() );
-            CBulletTraces::configVC.lifetime[i] =   std::atoi( strc.c_str() );
-            CBulletTraces::configVC.visibility[i] = std::atoi( strd.c_str() );
+                CBulletTraces::configVC.thickness[i] =  std::atof( strb.c_str() );
+                CBulletTraces::configVC.lifetime[i] =   std::atoi( strc.c_str() );
+                CBulletTraces::configVC.visibility[i] = std::atoi( strd.c_str() );
+            }
+        }
+        else
+        {
+            aSwitchesType[TRACE_TYPE_VC] = "GTA:VC (no config)";
         }
     }
 
@@ -124,22 +131,29 @@ void CBulletTraces::Init(void)
         snprintf(path, sizeof(path), "%s/SABulletTrails_Weapons.ini", aml->GetConfigPath());
         mINI::INIFile file(path);
         mINI::INIStructure ini;
-        file.read(ini);
+        CBulletTraces::configSA.loaded = file.read(ini);
 
         // Reading weapons params
-        for (int i = 22; i < 512; ++i)
+        if(CBulletTraces::configSA.loaded)
         {
-            std::string name = "WEP";
-            std::string formatted_str = name + std::to_string(i);
-            const char* formatted_str2 = formatted_str.c_str();
+            for (int i = 22; i < 512; ++i)
+            {
+                std::string name = "WEP";
+                std::string formatted_str = name + std::to_string(i);
+                const char* formatted_str2 = formatted_str.c_str();
 
-            std::string strb = ini.get(formatted_str2).get("thickness");
-            std::string strc = ini.get(formatted_str2).get("lifetime");
-            std::string strd = ini.get(formatted_str2).get("visibility");
+                std::string strb = ini.get(formatted_str2).get("thickness");
+                std::string strc = ini.get(formatted_str2).get("lifetime");
+                std::string strd = ini.get(formatted_str2).get("visibility");
 
-            CBulletTraces::configSA.thickness[i] =  std::atof( strb.c_str() );
-            CBulletTraces::configSA.lifetime[i] =   std::atoi( strc.c_str() );
-            CBulletTraces::configSA.visibility[i] = std::atoi( strd.c_str() );
+                CBulletTraces::configSA.thickness[i] =  std::atof( strb.c_str() );
+                CBulletTraces::configSA.lifetime[i] =   std::atoi( strc.c_str() );
+                CBulletTraces::configSA.visibility[i] = std::atoi( strd.c_str() );
+            }
+        }
+        else
+        {
+            aSwitchesType[TRACE_TYPE_SA] = "GTA:SA (no config)";
         }
     }
 }
@@ -218,71 +232,7 @@ void CBulletTraces::AddTrace2(CVector* start, CVector* end, eWeaponType weaponTy
             if (speed < 0.05f) return;
         }
     }
-
-    switch(nTracesType)
-    {
-        default: // SA
-            if(bUseConfigValues) AddTrace(start, end, CBulletTraces::configSA.thickness[weaponType], CBulletTraces::configSA.lifetime[weaponType], CBulletTraces::configSA.visibility[weaponType]);
-            else AddTrace(start, end, 0.01f, 300, 70);
-            break;
-
-        case TRACE_TYPE_III:
-            AddTrace(start, end, 0, 0, 0);
-            break;
-
-        case TRACE_TYPE_VC:
-            if(bUseConfigValues) AddTrace(start, end, CBulletTraces::configVC.thickness[weaponType], CBulletTraces::configVC.lifetime[weaponType], CBulletTraces::configVC.visibility[weaponType]);
-            else
-            {
-                switch(weaponType)
-                {
-                    case WEAPON_DESERT_EAGLE:
-                    case WEAPON_SHOTGUN:
-                    case WEAPON_SAWNOFF_SHOTGUN:
-                    case WEAPON_SPAS12_SHOTGUN:
-                        AddTrace(start, end, 0.7f, 1000, 200);
-                        break;
-
-                    case WEAPON_COUNTRYRIFLE:
-                    case WEAPON_SNIPERRIFLE:
-                    case WEAPON_AK47:
-                    case WEAPON_M4:
-                    case WEAPON_MINIGUN:
-                        AddTrace(start, end, 1.0f, 2000, 220);
-                        break;
-
-                    default:
-                        AddTrace(start, end, 0.4f, 750, 150);
-                        break;
-                }
-            }
-            break;
-
-        case TRACE_TYPE_CTW:
-            uint32_t maxTime = 15 * DistanceBetweenPoints(*start, *end);
-            switch(weaponType)
-            {
-                case WEAPON_DESERT_EAGLE:
-                case WEAPON_SHOTGUN:
-                case WEAPON_SAWNOFF_SHOTGUN:
-                case WEAPON_SPAS12_SHOTGUN:
-                    AddTrace(start, end, 0.012f, maxTime, 3);
-                    break;
-
-                case WEAPON_COUNTRYRIFLE:
-                case WEAPON_SNIPERRIFLE:
-                case WEAPON_AK47:
-                case WEAPON_M4:
-                case WEAPON_MINIGUN:
-                    AddTrace(start, end, 0.012f, maxTime, 4);
-                    break;
-
-                default:
-                    AddTrace(start, end, 0.012f, maxTime, 2);
-                    break;
-            }
-            break;
-    }
+    AddTraceAfterLogic(start, end, weaponType, false);
 }
 
 void CBulletTraces::Update(void)
@@ -712,5 +662,95 @@ void CBulletTraces::ProcessEffects(CBulletTrace* trace)
         ReportBulletAudio(isComingFromBehind ? AE_FRONTEND_BULLET_PASS_RIGHT_REAR : AE_FRONTEND_BULLET_PASS_RIGHT_FRONT);
     } else { // Bullet passing on left of the camera.
         ReportBulletAudio(isComingFromBehind ? AE_FRONTEND_BULLET_PASS_LEFT_REAR : AE_FRONTEND_BULLET_PASS_LEFT_FRONT);
+    }
+}
+
+void CBulletTraces::AddTraceAfterLogic(CVector* start, CVector* end, eWeaponType weaponType, bool isInstantFire)
+{
+    switch(nTracesType)
+    {
+        default: // SA
+            if(bUseConfigValues && CBulletTraces::configSA.loaded)
+            {
+                if(isInstantFire)
+                {
+                    uint32_t visibility = 1.5f * CBulletTraces::configSA.visibility[weaponType];
+                    if(visibility > 200) visibility = 200;
+                    AddTrace(start, end, 1.5f * CBulletTraces::configSA.thickness[weaponType], (uint32_t)(1.5f * CBulletTraces::configSA.lifetime[weaponType]), (uint8_t)visibility);
+                }
+                else AddTrace(start, end, CBulletTraces::configSA.thickness[weaponType], CBulletTraces::configSA.lifetime[weaponType], CBulletTraces::configSA.visibility[weaponType]);
+            }
+            else
+            {
+                if(isInstantFire) AddTrace(start, end, 0.02f, 750, 150);
+                else AddTrace(start, end, 0.01f, 300, 70);
+            }
+            break;
+
+        case TRACE_TYPE_III:
+            AddTrace(start, end, 0, 0, 0);
+            break;
+
+        case TRACE_TYPE_VC:
+            if(bUseConfigValues && CBulletTraces::configVC.loaded)
+            {
+                if(isInstantFire)
+                {
+                    uint32_t visibility = 1.5f * CBulletTraces::configVC.visibility[weaponType];
+                    if(visibility > 200) visibility = 200;
+                    AddTrace(start, end, 1.5f * CBulletTraces::configVC.thickness[weaponType], (uint32_t)(1.5f * CBulletTraces::configVC.lifetime[weaponType]), (uint8_t)visibility);
+                }
+                else AddTrace(start, end, CBulletTraces::configVC.thickness[weaponType], CBulletTraces::configVC.lifetime[weaponType], CBulletTraces::configVC.visibility[weaponType]);
+            }
+            else
+            {
+                switch(weaponType)
+                {
+                    case WEAPON_DESERT_EAGLE:
+                    case WEAPON_SHOTGUN:
+                    case WEAPON_SAWNOFF_SHOTGUN:
+                    case WEAPON_SPAS12_SHOTGUN:
+                        AddTrace(start, end, (isInstantFire ? 1.4f : 0.7f), 1000, 200);
+                        break;
+
+                    case WEAPON_COUNTRYRIFLE:
+                    case WEAPON_SNIPERRIFLE:
+                    case WEAPON_AK47:
+                    case WEAPON_M4:
+                    case WEAPON_MINIGUN:
+                        AddTrace(start, end, (isInstantFire ? 2.0f : 1.0f), 2000, 220);
+                        break;
+
+                    default:
+                        AddTrace(start, end, (isInstantFire ? 0.8f : 0.4f), 750, 150);
+                        break;
+                }
+            }
+            break;
+
+        case TRACE_TYPE_CTW:
+            uint32_t maxTime = 13 * DistanceBetweenPoints(*start, *end);
+            switch(weaponType)
+            {
+                case WEAPON_DESERT_EAGLE:
+                case WEAPON_SHOTGUN:
+                case WEAPON_SAWNOFF_SHOTGUN:
+                case WEAPON_SPAS12_SHOTGUN:
+                    AddTrace(start, end, (isInstantFire ? 0.02f : 0.012f), maxTime, 3);
+                    break;
+
+                case WEAPON_COUNTRYRIFLE:
+                case WEAPON_SNIPERRIFLE:
+                case WEAPON_AK47:
+                case WEAPON_M4:
+                case WEAPON_MINIGUN:
+                    AddTrace(start, end, (isInstantFire ? 0.02f : 0.012f), maxTime, 4);
+                    break;
+
+                default:
+                    AddTrace(start, end, (isInstantFire ? 0.02f : 0.012f), maxTime, 2);
+                    break;
+            }
+            break;
     }
 }

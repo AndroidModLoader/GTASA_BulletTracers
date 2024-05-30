@@ -18,7 +18,7 @@
 // ---------------------------------------------------------------------------------------
 
 
-MYMOD(net.theartemmaps.rusjj.tracers, GTASA BulletTracers, 1.0, RusJJ)
+MYMOD(net.theartemmaps.rusjj.tracers, GTASA BulletTracers, 1.1, RusJJ)
 NEEDGAME(com.rockstargames.gtasa)
 BEGIN_DEPLIST()
     ADD_DEPENDENCY_VER(net.rusjj.aml, 1.2.1)
@@ -39,6 +39,14 @@ ISAUtils* sautils;
 
 #define DO_REF
 #include "shared.h"
+
+const char* aSwitchesType[TRACE_TYPE_MAX] = 
+{
+    "GTA:SA",
+    "GTA:VC",
+    "GTA:III",
+    "GTA:CTW"
+};
 
 
 // ---------------------------------------------------------------------------------------
@@ -86,6 +94,16 @@ DECL_HOOKv(TracesAdd2, CVector *pStart, CVector *pEnd, eWeaponType WeaponType, C
         return;
     }
     CBulletTraces::AddTrace2(pStart, pEnd, WeaponType, pFiredByEntity);
+}
+
+DECL_HOOKv(Traces_FireOneInstantHitRound, CVector *pStart, CVector *pEnd, float SizeArg, UInt32 LifeTimeArg, UInt8 OpaquenessArg)
+{
+    if(!bModEnabled)
+    {
+        Traces_FireOneInstantHitRound(pStart, pEnd, SizeArg, LifeTimeArg, OpaquenessArg);
+        return;
+    }
+    CBulletTraces::AddTraceAfterLogic(pStart, pEnd, WEAPON_MICRO_UZI);
 }
 
 
@@ -138,14 +156,15 @@ extern "C" void OnModLoad()
     HOOKPLT(TracesShutdown, pGTASA + 0x6710A4);
     HOOKPLT(TracesAdd1, pGTASA + 0x672088);
     HOOKPLT(TracesAdd2, pGTASA + 0x6740FC);
+    HOOKBLX(Traces_FireOneInstantHitRound, pGTASA + 0x5E23E8);
   #else
     HOOKPLT(TracesInit, pGTASA + 0x83D918);
     HOOKPLT(TracesUpdate, pGTASA + 0x83FA90);
     HOOKPLT(TracesRender, pGTASA + 0x83F7A8);
     HOOKPLT(TracesShutdown, pGTASA + 0x841EB0);
     HOOKPLT(TracesAdd1, pGTASA + 0x8438E8);
-    HOOKBL(TracesAdd1, pGTASA + 0x6E6314);
     HOOKPLT(TracesAdd2, pGTASA + 0x846DB0);
+    HOOKBL(Traces_FireOneInstantHitRound, pGTASA + 0x707D78);
   #endif
 
     // Game Funcs
@@ -177,13 +196,6 @@ extern "C" void OnModLoad()
     aml->MLSGetInt("TRACECFG", (int*)&bUseConfigValues);
     //aml->MLSGetInt("TRACEWRK", (int*)&bModEnabled); // Nah
 
-    static const char* aSwitchesType[TRACE_TYPE_MAX] = 
-    {
-        "GTA:SA",
-        "GTA:VC",
-        "GTA:III",
-        "GTA:CTW"
-    };
     static const char* pYesNo[] = 
     {
         "FEM_OFF",
