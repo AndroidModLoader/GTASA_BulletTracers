@@ -25,11 +25,13 @@ static RwTexture* gpSmokeTrailTexture = NULL;
 static RwIm3DVertex TraceVerticesVC[10];
 static RwIm3DVertex TraceVerticesIII[10];
 static RwIm3DVertex TraceVerticesSA[6];
+static RwIm3DVertex TraceVerticesCTW[6];
 static uint16_t TraceIndexListVC[48] =  { 0, 5, 7, 0, 7, 2, 0, 7, 5, 0, 2, 7, 0, 4, 9, 0,
                                           9, 5, 0, 9, 4, 0, 5, 9, 0, 1, 6, 0, 6, 5, 0, 6,
                                           1, 0, 5, 6, 0, 3, 8, 0, 8, 5, 0, 8, 3, 0, 5, 8 };
 static uint16_t TraceIndexListIII[12] = { 0, 2, 1, 1, 2, 3, 2, 4, 3, 3, 4, 5 };
 static uint16_t TraceIndexListSA[12] =  { 4, 1, 3, 1, 0, 3, 0, 2, 3, 3, 2, 5 };
+static uint16_t TraceIndexListCTW[12] =  { 4, 1, 3, 1, 0, 3, 0, 2, 3, 3, 2, 5 };
 
 void CBulletTraces::Init(void)
 {
@@ -77,6 +79,14 @@ void CBulletTraces::Init(void)
     RwIm3DVertexSetRGBA(&TraceVerticesSA[3], 255, 255, 128, 0);
     RwIm3DVertexSetRGBA(&TraceVerticesSA[4], 255, 255, 128, 0);
     RwIm3DVertexSetRGBA(&TraceVerticesSA[5], 255, 255, 128, 0);
+
+    // CTW-part init
+    RwIm3DVertexSetRGBA(&TraceVerticesCTW[0], 255, 255, 255, 0);
+    RwIm3DVertexSetRGBA(&TraceVerticesCTW[1], 255, 255, 255, 0);
+    RwIm3DVertexSetRGBA(&TraceVerticesCTW[2], 255, 255, 255, 0);
+    RwIm3DVertexSetRGBA(&TraceVerticesCTW[3], 255, 255, 255, 255);
+    RwIm3DVertexSetRGBA(&TraceVerticesCTW[4], 255, 255, 255, 0);
+    RwIm3DVertexSetRGBA(&TraceVerticesCTW[5], 255, 255, 255, 0);
 
     // General init
     InitTraces();
@@ -247,6 +257,31 @@ void CBulletTraces::AddTrace2(CVector* start, CVector* end, eWeaponType weaponTy
                 }
             }
             break;
+
+        case TRACE_TYPE_CTW:
+            uint32_t maxTime = 15 * DistanceBetweenPoints(*start, *end);
+            switch(weaponType)
+            {
+                case WEAPON_DESERT_EAGLE:
+                case WEAPON_SHOTGUN:
+                case WEAPON_SAWNOFF_SHOTGUN:
+                case WEAPON_SPAS12_SHOTGUN:
+                    AddTrace(start, end, 0.012f, maxTime, 3);
+                    break;
+
+                case WEAPON_COUNTRYRIFLE:
+                case WEAPON_SNIPERRIFLE:
+                case WEAPON_AK47:
+                case WEAPON_M4:
+                case WEAPON_MINIGUN:
+                    AddTrace(start, end, 0.012f, maxTime, 4);
+                    break;
+
+                default:
+                    AddTrace(start, end, 0.012f, maxTime, 2);
+                    break;
+            }
+            break;
     }
 }
 
@@ -314,6 +349,10 @@ void CBulletTraces::Render(void)
 
         case TRACE_TYPE_III:
             RenderIII();
+            break;
+
+        case TRACE_TYPE_CTW:
+            RenderCTW();
             break;
     }
 }
@@ -559,6 +598,56 @@ void CBulletTraces::RenderSA(void)
         if (RwIm3DTransform(TraceVerticesSA, ARRAY_SIZE(TraceVerticesSA), NULL, rwIM3D_VERTEXRGBA))
         {
             RwIm3DRenderIndexedPrimitive(rwPRIMTYPETRILIST, TraceIndexListSA, ARRAY_SIZE(TraceIndexListSA));
+            RwIm3DEnd();
+        }
+    }
+
+    RwRenderStateSet(rwRENDERSTATEZWRITEENABLE, (void*)1);
+    RwRenderStateSet(rwRENDERSTATESRCBLEND,     (void*)rwBLENDSRCALPHA);
+    RwRenderStateSet(rwRENDERSTATEDESTBLEND,    (void*)rwBLENDINVSRCALPHA);
+    RwRenderStateSet(rwRENDERSTATECULLMODE,     (void*)rwCULLMODECULLBACK);
+}
+
+void CBulletTraces::RenderCTW(void)
+{
+    RwRenderStateSet(rwRENDERSTATEZWRITEENABLE,      (void*)0);
+    RwRenderStateSet(rwRENDERSTATESRCBLEND,          (void*)rwBLENDSRCALPHA);
+    RwRenderStateSet(rwRENDERSTATEDESTBLEND,         (void*)rwBLENDINVSRCALPHA);
+    RwRenderStateSet(rwRENDERSTATECULLMODE,          (void*)rwCULLMODECULLNONE);
+    RwRenderStateSet(rwRENDERSTATEVERTEXALPHAENABLE, (void*)1);
+    RwRenderStateSet(rwRENDERSTATETEXTURERASTER,     NULL);
+
+    for (int i = 0; i < MAX_TRACES; i++)
+    {
+        CBulletTrace& trace = aTraces[i];
+        if (!trace.bIsUsed) continue;
+
+        const float t = 1.0f - (float)(*m_snTimeInMilliseconds - trace.TimeCreated) / (float)trace.LifeTime;
+        
+        CVector camToOriginDir = (trace.Start - TheCamera->GetPosition());
+        VectorNormalise(&camToOriginDir);
+
+        CVector direction = trace.End - trace.Start;
+        VectorNormalise(&direction);
+
+        CVector up = camToOriginDir.Cross(direction);
+        VectorNormalise(&up);
+
+        CVector sizeVec = up * (trace.Size * t);
+        CVector currPosOnTrace = trace.End - (trace.End - trace.Start) * t;
+
+        CVector tracerEnd = currPosOnTrace + direction * trace.Opaqueness;
+
+        RwIm3DVertexSetPosVector(&TraceVerticesCTW[0], currPosOnTrace);
+        RwIm3DVertexSetPosVector(&TraceVerticesCTW[1], currPosOnTrace + sizeVec);
+        RwIm3DVertexSetPosVector(&TraceVerticesCTW[2], currPosOnTrace - sizeVec);
+        RwIm3DVertexSetPosVector(&TraceVerticesCTW[3], tracerEnd);
+        RwIm3DVertexSetPosVector(&TraceVerticesCTW[4], tracerEnd + sizeVec);
+        RwIm3DVertexSetPosVector(&TraceVerticesCTW[5], tracerEnd - sizeVec);
+        
+        if (RwIm3DTransform(TraceVerticesCTW, ARRAY_SIZE(TraceVerticesCTW), NULL, rwIM3D_VERTEXRGBA))
+        {
+            RwIm3DRenderIndexedPrimitive(rwPRIMTYPETRILIST, TraceIndexListCTW, ARRAY_SIZE(TraceIndexListCTW));
             RwIm3DEnd();
         }
     }

@@ -26,6 +26,7 @@ enum eTracesType : int
     TRACE_TYPE_SA = 0,
     TRACE_TYPE_VC,
     TRACE_TYPE_III,
+    TRACE_TYPE_CTW,
 
     TRACE_TYPE_MAX
 };

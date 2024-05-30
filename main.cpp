@@ -1,5 +1,12 @@
 // ---------------------------------------------------------------------------------------
 
+// DISCLAIMER:
+// GTA:CTW realisation is MY OWN attempt to bring it. The engines are different,
+// and the rendering in GTA:CTW - is a single line that represents a trace.
+// And this line is being drawed differently.
+
+// ---------------------------------------------------------------------------------------
+
 
 #include <mod/amlmod.h>
 #include <mod/logger.h>
@@ -175,11 +182,12 @@ extern "C" void OnModLoad()
         "GTA:SA",
         "GTA:VC",
         "GTA:III",
+        "GTA:CTW"
     };
     static const char* pYesNo[] = 
     {
         "FEM_OFF",
-        "FEM_ON",
+        "FEM_ON"
     };
     sautils->AddClickableItem(eTypeOfSettings::SetType_Display, "Bullet Traces", nTracesType, 0, TRACE_TYPE_MAX-1, aSwitchesType, OnSettingSwitch_Type, NULL);
     sautils->AddClickableItem(eTypeOfSettings::SetType_Mods, "Enable BulletTraces", bUseConfigValues, 0, 1, pYesNo, OnSettingSwitch_Enabled, NULL);

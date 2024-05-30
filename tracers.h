@@ -29,6 +29,7 @@ private:
     static void RenderSA(void);
     static void RenderVC(void);
     static void RenderIII(void);
+    static void RenderCTW(void);
     static void ProcessEffects(CBulletTrace* trace);
 
 public:
